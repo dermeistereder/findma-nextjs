@@ -1,28 +1,18 @@
 'use client'
 import Link from 'next/link'
-import { useState } from 'react'
 import { Listing } from '@/lib/types'
 import AmpelBadge from './AmpelBadge'
+import LogoAvatar from './LogoAvatar'
 
 interface Props {
   listing: Listing
   showCategory?: boolean
 }
 
-function LogoImage({ src, name }: { src: string; name: string }) {
-  const [error, setError] = useState(false)
-  if (error) return <span className="text-lg font-bold text-gray-300">{name.charAt(0)}</span>
-  return <img src={src} alt={name} className="w-8 h-8 object-contain" onError={() => setError(true)} />
-}
-
 export default function ListingCard({ listing, showCategory = true }: Props) {
-  const logoSrc = listing.logo_url || (listing.website
-    ? `https://logo.clearbit.com/${listing.website.replace('https://', '').replace('http://', '').split('/')[0]}`
-    : null)
-
   return (
     <Link href={`/verzeichnis/${listing.slug}`} className="block">
-      <div className={`card p-4 h-full ${listing.is_premium ? 'border-[#1D7A4F]/40 shadow-sm' : ''}`}>
+      <div className={`card p-4 h-full transition-shadow hover:shadow-md ${listing.is_premium ? 'border-[#1D7A4F]/40 shadow-sm' : ''}`}>
         {listing.is_premium && (
           <div className="flex items-center gap-1 text-xs text-[#1D7A4F] font-medium mb-2">
             <span>⭐</span>
@@ -30,13 +20,7 @@ export default function ListingCard({ listing, showCategory = true }: Props) {
           </div>
         )}
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {logoSrc ? (
-              <LogoImage src={logoSrc} name={listing.name} />
-            ) : (
-              <span className="text-lg font-bold text-gray-300">{listing.name.charAt(0)}</span>
-            )}
-          </div>
+          <LogoAvatar listing={listing} size="sm" />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold text-gray-900 text-sm leading-tight truncate">{listing.name}</h3>

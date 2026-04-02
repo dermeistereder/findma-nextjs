@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Listing } from '@/lib/types'
 import AmpelBadge from '@/components/AmpelBadge'
+import LogoAvatar from '@/components/LogoAvatar'
 
 export const revalidate = 3600
 
@@ -128,12 +129,8 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
               )}
 
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {logoSrc ? (
-                    <img src={logoSrc} alt={listing.name} className="w-12 h-12 object-contain" />
-                  ) : (
-                    <span className="text-2xl font-bold text-gray-200">{listing.name.charAt(0)}</span>
-                  )}
+                <div className="flex-shrink-0">
+                  <LogoAvatar listing={listing} size="md" />
                 </div>
 
                 <div className="flex-1">

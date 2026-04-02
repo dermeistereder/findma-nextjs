@@ -7,10 +7,45 @@ import Link from 'next/link'
 
 type Ampel = 'green' | 'yellow' | 'red'
 
+// Inline SVG flags — no emoji, works everywhere
+const FlagAT = () => (
+  <svg width="20" height="14" viewBox="0 0 20 14" className="rounded-sm flex-shrink-0">
+    <rect width="20" height="4.67" y="0" fill="#ED2939"/>
+    <rect width="20" height="4.67" y="4.67" fill="#fff"/>
+    <rect width="20" height="4.67" y="9.33" fill="#ED2939"/>
+  </svg>
+)
+
+const FlagEU = () => (
+  <svg width="20" height="14" viewBox="0 0 20 14" className="rounded-sm flex-shrink-0">
+    <rect width="20" height="14" fill="#003399"/>
+    <g fill="#FFCC00">
+      {/* 12 stars in a circle */}
+      {Array.from({length: 12}).map((_, i) => {
+        const angle = (i * 30 - 90) * Math.PI / 180
+        const cx = 10 + 4.5 * Math.cos(angle)
+        const cy = 7 + 4.5 * Math.sin(angle)
+        return <circle key={i} cx={cx} cy={cy} r="0.7"/>
+      })}
+    </g>
+  </svg>
+)
+
+const FlagWorld = () => (
+  <svg width="20" height="14" viewBox="0 0 20 14" className="rounded-sm flex-shrink-0">
+    <rect width="20" height="14" fill="#1a73e8"/>
+    <ellipse cx="10" cy="7" rx="5" ry="5" fill="none" stroke="#fff" strokeWidth="0.6"/>
+    <ellipse cx="10" cy="7" rx="2" ry="5" fill="none" stroke="#fff" strokeWidth="0.6"/>
+    <line x1="5" y1="7" x2="15" y2="7" stroke="#fff" strokeWidth="0.6"/>
+    <line x1="5.5" y1="4.5" x2="14.5" y2="4.5" stroke="#fff" strokeWidth="0.6"/>
+    <line x1="5.5" y1="9.5" x2="14.5" y2="9.5" stroke="#fff" strokeWidth="0.6"/>
+  </svg>
+)
+
 const ampelConfig = {
-  green: { flag: '🇦🇹', label: 'Österreich' },
-  yellow: { flag: '🇪🇺', label: 'Europa' },
-  red: { flag: '🌍', label: 'International' },
+  green: { Flag: FlagAT, label: 'Österreich', active: 'bg-red-600 text-white border-red-600' },
+  yellow: { Flag: FlagEU, label: 'Europa', active: 'bg-blue-800 text-white border-blue-800' },
+  red: { Flag: FlagWorld, label: 'International', active: 'bg-blue-500 text-white border-blue-500' },
 }
 
 export default function HeroSection({ premium }: { premium: Listing[] }) {
@@ -77,36 +112,30 @@ export default function HeroSection({ premium }: { premium: Listing[] }) {
           </div>
         </form>
 
-        {/* Ampel Filter — direkt unter Suchleiste */}
+        {/* Ampel Filter mit echten Flaggen */}
         <div className="flex items-center justify-center gap-2 mb-6">
           {(Object.entries(ampelConfig) as [Ampel, typeof ampelConfig.green][]).map(([key, cfg]) => (
             <button
               key={key}
               onClick={() => setActiveAmpel(activeAmpel === key ? null : key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                activeAmpel === key
-                  ? key === 'green'
-                    ? 'bg-green-600 text-white border-green-600'
-                    : key === 'yellow'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-orange-500 text-white border-orange-500'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                activeAmpel === key ? cfg.active : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
               }`}
             >
-              <span>{cfg.flag}</span>
+              <cfg.Flag />
               <span>{cfg.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Premium-Einträge Preview (wenn Ampel aktiv) */}
+        {/* Premium-Einträge Preview */}
         {activeAmpel && (
           <div className="max-w-2xl mx-auto">
             <div className="card p-5 text-left">
               <div className="text-xs font-semibold text-gray-500 mb-4 flex items-center gap-2">
-                Premium-Einträge
-                <span className="mx-1">—</span>
-                <span>{ampelConfig[activeAmpel].flag} {ampelConfig[activeAmpel].label}</span>
+                Premium-Einträge —
+                <ampelConfig[activeAmpel].Flag />
+                {ampelConfig[activeAmpel].label}
               </div>
               {filteredPremium.length === 0 ? (
                 <div className="text-center py-4">
