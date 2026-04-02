@@ -16,7 +16,24 @@ interface Submission {
   id: string; name: string; website: string; description: string
   submitted_by_email: string; status: string; created_at: string
 }
-interface Stats { total: number; approved: number; pending: number; premium: number; submissions: number }
+interface Stats {
+  total: number; approved: number; pending: number; premium: number; submissions: number
+}
+
+interface BulkItem {
+  name: string
+  website: string
+  description: string
+  description_long?: string
+  ampel: 'green' | 'yellow' | 'red'
+  ampel_reason?: string
+  category_slug: string
+  hq_country?: string
+  founded_country?: string
+  owner_country?: string
+  keywords?: string
+  type?: string
+}
 
 const CATEGORIES = [
   { slug: 'kommunikation', name: 'Kommunikation & Kollaboration' },
@@ -29,7 +46,6 @@ const CATEGORIES = [
   { slug: 'ki-automatisierung', name: 'KI & Automatisierung' },
   { slug: 'kunst-handgemachtes', name: 'Kunst & Handgemachtes' },
 ]
-
 const AMPEL_FLAGS: Record<string, string> = { green: '🇦🇹', yellow: '🇪🇺', red: '🌍' }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -48,14 +64,11 @@ function adminFetch(path: string, password: string, options: RequestInit = {}) {
 function LoginScreen({ onLogin }: { onLogin: (pw: string) => void }) {
   const [pw, setPw] = useState('')
   const [error, setError] = useState('')
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const res = await adminFetch('/api/admin/stats', pw)
-    if (res.ok) { onLogin(pw) }
-    else { setError('Falsches Passwort.') }
+    if (res.ok) { onLogin(pw) } else { setError('Falsches Passwort.') }
   }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-sm">
@@ -64,11 +77,8 @@ function LoginScreen({ onLogin }: { onLogin: (pw: string) => void }) {
           <span className="text-sm font-medium text-gray-500">Admin</span>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="password" value={pw} onChange={e => setPw(e.target.value)}
-            placeholder="Passwort"
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D7A4F]/30 focus:border-[#1D7A4F]"
-          />
+          <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Passwort"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D7A4F]/30 focus:border-[#1D7A4F]" />
           {error && <p className="text-red-500 text-xs">{error}</p>}
           <button type="submit" className="w-full bg-[#1D7A4F] text-white rounded-xl py-3 text-sm font-medium hover:bg-[#166040] transition-colors">
             Anmelden
@@ -105,10 +115,8 @@ function Dashboard({ stats }: { stats: Stats }) {
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      onClick={() => onChange(!value)}
-      className={`relative w-10 h-5 rounded-full transition-colors ${value ? 'bg-[#1D7A4F]' : 'bg-gray-200'}`}
-    >
+    <button onClick={() => onChange(!value)}
+      className={`relative w-10 h-5 rounded-full transition-colors ${value ? 'bg-[#1D7A4F]' : 'bg-gray-200'}`}>
       <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-5' : ''}`} />
     </button>
   )
@@ -123,8 +131,7 @@ function EditModal({ listing, password, onClose, onSaved }: {
   const [error, setError] = useState('')
 
   const handleSave = async () => {
-    setSaving(true)
-    setError('')
+    setSaving(true); setError('')
     const res = await adminFetch(`/api/admin/listings/${listing.id}`, password, {
       method: 'PATCH',
       body: JSON.stringify({
@@ -136,19 +143,16 @@ function EditModal({ listing, password, onClose, onSaved }: {
         keywords: form.keywords, type: form.type, status: form.status,
       }),
     })
-    if (res.ok) { onSaved(); onClose() }
-    else { const d = await res.json(); setError(d.error || 'Fehler') }
+    if (res.ok) { onSaved(); onClose() } else { const d = await res.json(); setError(d.error || 'Fehler') }
     setSaving(false)
   }
 
   const field = (label: string, key: keyof typeof form, type = 'text') => (
     <div key={key}>
       <label className="block text-xs text-gray-500 mb-1">{label}</label>
-      <input
-        type={type} value={(form[key] as string) || ''}
+      <input type={type} value={(form[key] as string) || ''}
         onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D7A4F]/30"
-      />
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D7A4F]/30" />
     </div>
   )
 
@@ -243,8 +247,7 @@ function ListingsTab({ password }: { password: string }) {
   const toggle = async (id: string, field: 'is_premium' | 'is_featured', value: boolean) => {
     setListings(l => l.map(x => x.id === id ? { ...x, [field]: value } : x))
     await adminFetch(`/api/admin/listings/${id}`, password, {
-      method: 'PATCH',
-      body: JSON.stringify({ [field]: value }),
+      method: 'PATCH', body: JSON.stringify({ [field]: value }),
     })
   }
 
@@ -256,12 +259,10 @@ function ListingsTab({ password }: { password: string }) {
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Eintrag suchen..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Eintrag suchen..."
             className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1D7A4F]/30 w-56" />
         </div>
       </div>
-
       {loading ? (
         <div className="text-center py-12 text-gray-400">Wird geladen...</div>
       ) : (
@@ -287,9 +288,8 @@ function ListingsTab({ password }: { password: string }) {
                     <td className="px-4 py-3">
                       <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                         {domain ? (
-                          <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
-                            alt="" className="w-6 h-6 object-contain"
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt=""
+                            className="w-6 h-6 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                         ) : (
                           <span className="text-xs font-bold text-gray-400">{l.name.charAt(0)}</span>
                         )}
@@ -300,9 +300,7 @@ function ListingsTab({ password }: { password: string }) {
                       <div className="text-xs text-gray-400">{l.slug}</div>
                     </td>
                     <td className="px-4 py-3 text-gray-500">{l.categories?.name || '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-lg">{AMPEL_FLAGS[l.ampel] || '—'}</span>
-                    </td>
+                    <td className="px-4 py-3"><span className="text-lg">{AMPEL_FLAGS[l.ampel] || '—'}</span></td>
                     <td className="px-4 py-3 text-center">
                       <Toggle value={l.is_premium} onChange={v => toggle(l.id, 'is_premium', v)} />
                     </td>
@@ -315,8 +313,7 @@ function ListingsTab({ password }: { password: string }) {
                       <Toggle value={l.is_featured} onChange={v => toggle(l.id, 'is_featured', v)} />
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <button onClick={() => setEditing(l)}
-                        className="text-gray-400 hover:text-[#1D7A4F] transition-colors p-1">
+                      <button onClick={() => setEditing(l)} className="text-gray-400 hover:text-[#1D7A4F] transition-colors p-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
@@ -329,10 +326,7 @@ function ListingsTab({ password }: { password: string }) {
           </table>
         </div>
       )}
-
-      {editing && (
-        <EditModal listing={editing} password={password} onClose={() => setEditing(null)} onSaved={load} />
-      )}
+      {editing && <EditModal listing={editing} password={password} onClose={() => setEditing(null)} onSaved={load} />}
     </div>
   )
 }
@@ -352,10 +346,7 @@ function SubmissionsTab({ password }: { password: string }) {
   useEffect(() => { load() }, [load])
 
   const updateStatus = async (id: string, status: string) => {
-    await adminFetch('/api/admin/submissions', password, {
-      method: 'PATCH',
-      body: JSON.stringify({ id, status }),
-    })
+    await adminFetch('/api/admin/submissions', password, { method: 'PATCH', body: JSON.stringify({ id, status }) })
     load()
   }
 
@@ -365,7 +356,6 @@ function SubmissionsTab({ password }: { password: string }) {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Einreichungen</h1>
-
       <h2 className="text-lg font-semibold text-gray-700 mb-3">Offen ({pending.length})</h2>
       {loading ? (
         <div className="text-center py-8 text-gray-400">Wird geladen...</div>
@@ -397,7 +387,6 @@ function SubmissionsTab({ password }: { password: string }) {
           ))}
         </div>
       )}
-
       {rest.length > 0 && (
         <>
           <h2 className="text-sm font-semibold text-gray-400 mb-3">Bearbeitet ({rest.length})</h2>
@@ -408,9 +397,7 @@ function SubmissionsTab({ password }: { password: string }) {
                   <span className="font-medium text-gray-700 text-sm">{s.name}</span>
                   <span className="text-xs text-gray-400 ml-2">{s.submitted_by_email}</span>
                 </div>
-                <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                  s.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
+                <span className={`text-xs font-medium px-2 py-1 rounded-full ${s.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {s.status === 'approved' ? 'Genehmigt' : 'Abgelehnt'}
                 </span>
               </div>
@@ -434,10 +421,7 @@ function ResearchTab({ password }: { password: string }) {
 
   const handleResearch = async (e: React.FormEvent) => {
     e.preventDefault()
-    setResearching(true)
-    setResult(null)
-    setError('')
-    setSavedSlug('')
+    setResearching(true); setResult(null); setError(''); setSavedSlug('')
     try {
       const isUrl = query.startsWith('http')
       const res = await fetch('/api/research', {
@@ -454,27 +438,19 @@ function ResearchTab({ password }: { password: string }) {
 
   const handleSave = async () => {
     if (!result) return
-    setSaving(true)
-    setSaveError('')
+    setSaving(true); setSaveError('')
     const res = await adminFetch('/api/admin/listings', password, {
-      method: 'POST',
-      body: JSON.stringify(result),
+      method: 'POST', body: JSON.stringify(result),
     })
     const data = await res.json()
-    if (res.ok) {
-      setSavedSlug(result.slug)
-      setResult(null)
-      setQuery('')
-    } else {
-      setSaveError(data.error || 'Speichern fehlgeschlagen')
-    }
+    if (res.ok) { setSavedSlug(result.slug); setResult(null); setQuery('') }
+    else { setSaveError(data.error || 'Speichern fehlgeschlagen') }
     setSaving(false)
   }
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">KI-Recherche</h1>
-
       {savedSlug && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 flex items-center justify-between">
           <span className="text-sm text-green-800">✓ Eintrag gespeichert!</span>
@@ -483,7 +459,6 @@ function ResearchTab({ password }: { password: string }) {
           </Link>
         </div>
       )}
-
       <form onSubmit={handleResearch} className="bg-white rounded-xl border border-gray-100 p-5 mb-5">
         <p className="text-sm text-gray-500 mb-3">URL oder Unternehmensname eingeben — Claude recherchiert automatisch.</p>
         <div className="flex gap-3">
@@ -497,24 +472,19 @@ function ResearchTab({ password }: { password: string }) {
         </div>
         {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
       </form>
-
       {result && (
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <h2 className="font-semibold text-gray-900 mb-4">Ergebnis prüfen & speichern</h2>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: 'Name', key: 'name' },
-              { label: 'Slug (URL)', key: 'slug' },
-              { label: 'Website', key: 'website' },
-              { label: 'Typ', key: 'type' },
-              { label: 'Gründungsland', key: 'founded_country' },
-              { label: 'Hauptsitz', key: 'hq_country' },
+              { label: 'Name', key: 'name' }, { label: 'Slug (URL)', key: 'slug' },
+              { label: 'Website', key: 'website' }, { label: 'Typ', key: 'type' },
+              { label: 'Gründungsland', key: 'founded_country' }, { label: 'Hauptsitz', key: 'hq_country' },
               { label: 'Eigentümer-Land', key: 'owner_country' },
             ].map(({ label, key }) => (
               <div key={key}>
                 <label className="block text-xs text-gray-400 mb-1">{label}</label>
-                <input value={result[key] || ''}
-                  onChange={e => setResult({ ...result, [key]: e.target.value })}
+                <input value={result[key] || ''} onChange={e => setResult({ ...result, [key]: e.target.value })}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D7A4F]/30" />
               </div>
             ))}
@@ -567,8 +537,140 @@ function ResearchTab({ password }: { password: string }) {
   )
 }
 
+// ─── Bulk Import Tab ──────────────────────────────────────────────────────────
+function BulkImportTab({ password }: { password: string }) {
+  const [jsonInput, setJsonInput] = useState('')
+  const [parsed, setParsed] = useState<BulkItem[] | null>(null)
+  const [parseError, setParseError] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ ok: number; failed: number; results: { name: string; status: string; error?: string }[] } | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+
+  const handleParse = () => {
+    setParseError(''); setParsed(null); setImportResult(null)
+    try {
+      const data = JSON.parse(jsonInput)
+      const arr = Array.isArray(data) ? data : [data]
+      setParsed(arr)
+      setSelectedIds(new Set(arr.map((_: any, i: number) => i)))
+    } catch (e) {
+      setParseError('Ungültiges JSON. Bitte prüfen.')
+    }
+  }
+
+  const toggleItem = (i: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(i) ? next.delete(i) : next.add(i)
+      return next
+    })
+  }
+
+  const handleImport = async () => {
+    if (!parsed) return
+    setImporting(true); setImportResult(null)
+    const toImport = parsed.filter((_, i) => selectedIds.has(i))
+    const res = await adminFetch('/api/admin/bulk-import', password, {
+      method: 'POST',
+      body: JSON.stringify({ listings: toImport }),
+    })
+    const data = await res.json()
+    setImportResult(data)
+    setImporting(false)
+    if (data.ok > 0) {
+      setParsed(null); setJsonInput(''); setSelectedIds(new Set())
+    }
+  }
+
+  return (
+    <div className="max-w-3xl">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Bulk-Import</h1>
+      <p className="text-sm text-gray-500 mb-6">
+        JSON aus dem Chat hier einfügen, Einträge prüfen und mit einem Klick alle eintragen.
+      </p>
+
+      {importResult && (
+        <div className={`rounded-xl p-4 mb-5 border ${importResult.failed === 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+          <p className="text-sm font-medium mb-2">
+            {importResult.ok} erfolgreich eingetragen
+            {importResult.failed > 0 && `, ${importResult.failed} fehlgeschlagen`}
+          </p>
+          {importResult.results.filter(r => r.status === 'error').map((r, i) => (
+            <p key={i} className="text-xs text-red-600">✕ {r.name}: {r.error}</p>
+          ))}
+        </div>
+      )}
+
+      {!parsed ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-5">
+          <label className="block text-xs text-gray-500 mb-2">JSON einfügen</label>
+          <textarea
+            value={jsonInput}
+            onChange={e => setJsonInput(e.target.value)}
+            placeholder={`[\n  {\n    "name": "Firma GmbH",\n    "website": "https://firma.at",\n    "description": "Kurzbeschreibung",\n    "ampel": "green",\n    "category_slug": "mode-textil"\n  }\n]`}
+            rows={12}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1D7A4F]/30 resize-none"
+          />
+          {parseError && <p className="text-red-500 text-xs mt-2">{parseError}</p>}
+          <button
+            onClick={handleParse}
+            disabled={!jsonInput.trim()}
+            className="mt-3 bg-[#1D7A4F] text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-[#166040] disabled:opacity-50"
+          >
+            JSON prüfen
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-gray-600">{parsed.length} Einträge erkannt — wähle aus welche eingetragen werden sollen:</p>
+            <button onClick={() => { setParsed(null); setJsonInput('') }} className="text-xs text-gray-400 hover:text-gray-600">
+              Zurück
+            </button>
+          </div>
+          <div className="space-y-3 mb-5">
+            {parsed.map((item, i) => (
+              <div key={i}
+                onClick={() => toggleItem(i)}
+                className={`bg-white rounded-xl border p-4 cursor-pointer transition-all ${selectedIds.has(i) ? 'border-[#1D7A4F] ring-1 ring-[#1D7A4F]/20' : 'border-gray-100 opacity-50'}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${selectedIds.has(i) ? 'bg-[#1D7A4F]' : 'bg-gray-200'}`}>
+                    {selectedIds.has(i) && <span className="text-white text-xs">✓</span>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-gray-900">{item.name}</span>
+                      <span className="text-lg">{AMPEL_FLAGS[item.ampel] || '—'}</span>
+                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                        {CATEGORIES.find(c => c.slug === item.category_slug)?.name || item.category_slug}
+                      </span>
+                    </div>
+                    {item.website && <p className="text-xs text-[#1D7A4F] mt-0.5">{item.website}</p>}
+                    {item.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-3 items-center">
+            <button
+              onClick={handleImport}
+              disabled={importing || selectedIds.size === 0}
+              className="bg-[#1D7A4F] text-white rounded-xl px-6 py-2.5 text-sm font-medium hover:bg-[#166040] disabled:opacity-50"
+            >
+              {importing ? 'Wird eingetragen...' : `✓ ${selectedIds.size} Einträge eintragen`}
+            </button>
+            <span className="text-xs text-gray-400">{selectedIds.size} von {parsed.length} ausgewählt</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main Admin ───────────────────────────────────────────────────────────────
-type Tab = 'dashboard' | 'listings' | 'submissions' | 'research'
+type Tab = 'dashboard' | 'listings' | 'submissions' | 'research' | 'bulk'
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -581,11 +683,7 @@ export default function AdminPage() {
     if (res.ok) setStats(await res.json())
   }, [])
 
-  const handleLogin = (pw: string) => {
-    setPassword(pw)
-    setAuthed(true)
-    loadStats(pw)
-  }
+  const handleLogin = (pw: string) => { setPassword(pw); setAuthed(true); loadStats(pw) }
 
   if (!authed) return <LoginScreen onLogin={handleLogin} />
 
@@ -594,11 +692,11 @@ export default function AdminPage() {
     { id: 'listings', label: 'Einträge', icon: '☰', badge: stats.total },
     { id: 'submissions', label: 'Einreichungen', icon: '📬', badge: stats.pending || undefined },
     { id: 'research', label: 'KI-Recherche', icon: '🔍' },
+    { id: 'bulk', label: 'Bulk-Import', icon: '📥' },
   ]
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <aside className="w-56 bg-white border-r border-gray-100 flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -610,9 +708,7 @@ export default function AdminPage() {
           {navItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === item.id
-                  ? 'bg-[#1D7A4F] text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
+                activeTab === item.id ? 'bg-[#1D7A4F] text-white' : 'text-gray-600 hover:bg-gray-50'
               }`}>
               <span className="flex items-center gap-2.5">
                 <span>{item.icon}</span>
@@ -632,13 +728,12 @@ export default function AdminPage() {
           </Link>
         </div>
       </aside>
-
-      {/* Main Content */}
       <main className="flex-1 p-8 overflow-auto">
         {activeTab === 'dashboard' && <><Dashboard stats={stats} /><ListingsTab password={password} /></>}
         {activeTab === 'listings' && <ListingsTab password={password} />}
         {activeTab === 'submissions' && <SubmissionsTab password={password} />}
         {activeTab === 'research' && <ResearchTab password={password} />}
+        {activeTab === 'bulk' && <BulkImportTab password={password} />}
       </main>
     </div>
   )
