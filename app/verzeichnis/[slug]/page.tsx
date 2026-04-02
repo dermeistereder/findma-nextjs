@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Listing } from '@/lib/types'
 import AmpelBadge from '@/components/AmpelBadge'
 import LogoAvatar from '@/components/LogoAvatar'
+import ListingCard from '@/components/ListingCard'
 
 export const revalidate = 3600
 
@@ -43,6 +44,18 @@ async function getListing(slug: string) {
   return data as Listing | null
 }
 
+async function getRelated(categoryId: string, currentSlug: string) {
+  const { data } = await supabase
+    .from('listings')
+    .select('*, categories(name, slug)')
+    .eq('status', 'approved')
+    .eq('category_id', categoryId)
+    .neq('slug', currentSlug)
+    .order('is_premium', { ascending: false })
+    .limit(3)
+  return (data || []) as Listing[]
+}
+
 const ampelConfig = {
   green: {
     label: 'Österreich',
@@ -73,6 +86,10 @@ const ampelConfig = {
 export default async function ListingDetailPage({ params }: { params: { slug: string } }) {
   const listing = await getListing(params.slug)
   if (!listing) notFound()
+
+  const related = listing.category_id
+    ? await getRelated(listing.category_id, listing.slug)
+    : []
 
   const ampel = ampelConfig[listing.ampel]
   const logoSrc = listing.logo_url ||
@@ -260,6 +277,44 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
             </div>
           </div>
         </div>
+
+        {/* Premium-Upgrade Banner — nur für Nicht-Premium-Einträge */}
+        {!listing.is_premium && (
+          <div className="mt-6 flex items-center justify-between gap-4 bg-gray-50 border border-gray-200 rounded-xl px-5 py-4">
+            <p className="text-sm text-gray-600">
+              Dieser Eintrag ist noch kein Premium-Eintrag. Bist du der Inhaber?
+            </p>
+            <Link
+              href={`/premium?slug=${listing.slug}`}
+              className="text-sm font-medium text-[#1D7A4F] hover:underline whitespace-nowrap"
+            >
+              Jetzt upgraden →
+            </Link>
+          </div>
+        )}
+
+        {/* Weitere Einträge aus der gleichen Kategorie */}
+        {related.length > 0 && listing.categories && (
+          <div className="mt-10">
+            <h2 className="text-xl font-bold text-gray-900 mb-5">
+              Weitere Einträge in {listing.categories.name}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {related.map(r => (
+                <ListingCard key={r.id} listing={r} showCategory={false} />
+              ))}
+            </div>
+            <div className="mt-4 text-center">
+              <Link
+                href={`/verzeichnis/kategorie/${listing.categories.slug}`}
+                className="text-sm text-[#1D7A4F] hover:underline"
+              >
+                Alle Einträge in {listing.categories.name} →
+              </Link>
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   )
