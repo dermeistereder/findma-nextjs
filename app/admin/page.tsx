@@ -543,7 +543,7 @@ function BulkImportTab({ password }: { password: string }) {
   const [parsed, setParsed] = useState<BulkItem[] | null>(null)
   const [parseError, setParseError] = useState('')
   const [importing, setImporting] = useState(false)
-  const [importResult, setImportResult] = useState<{ ok: number; failed: number; results: { name: string; status: string; error?: string }[] } | null>(null)
+  const [importResult, setImportResult] = useState<{ ok: number; skipped: number; failed: number; results: { name: string; status: string; reason?: string }[] } | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   const handleParse = () => {
@@ -592,11 +592,15 @@ function BulkImportTab({ password }: { password: string }) {
       {importResult && (
         <div className={`rounded-xl p-4 mb-5 border ${importResult.failed === 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
           <p className="text-sm font-medium mb-2">
-            {importResult.ok} erfolgreich eingetragen
-            {importResult.failed > 0 && `, ${importResult.failed} fehlgeschlagen`}
+            {importResult.ok} eingetragen
+            {importResult.skipped > 0 && ` · ${importResult.skipped} übersprungen (bereits vorhanden)`}
+            {importResult.failed > 0 && ` · ${importResult.failed} fehlgeschlagen`}
           </p>
+          {importResult.results.filter(r => r.status === 'skipped').map((r, i) => (
+            <p key={i} className="text-xs text-gray-500">⊘ {r.name}: {r.reason}</p>
+          ))}
           {importResult.results.filter(r => r.status === 'error').map((r, i) => (
-            <p key={i} className="text-xs text-red-600">✕ {r.name}: {r.error}</p>
+            <p key={i} className="text-xs text-red-600">✕ {r.name}: {r.reason}</p>
           ))}
         </div>
       )}

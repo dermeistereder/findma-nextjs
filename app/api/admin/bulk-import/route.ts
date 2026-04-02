@@ -17,6 +17,14 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+function normalizeUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace('www.', '').toLowerCase()
+  } catch {
+    return url.toLowerCase()
+  }
+}
+
 export async function POST(req: NextRequest) {
   const password = req.headers.get('x-admin-password')
   if (password !== process.env.ADMIN_PASSWORD) {
@@ -39,20 +47,45 @@ export async function POST(req: NextRequest) {
     categories.forEach(c => { categoryMap[c.slug] = c.id })
   }
 
-  const results: { name: string; status: 'ok' | 'error'; slug?: string; error?: string }[] = []
+  // Alle bestehenden Websites und Slugs laden für Duplikat-Prüfung
+  const { data: existingListings } = await supabase
+    .from('listings')
+    .select('slug, website')
+
+  const existingWebsites = new Set(
+    (existingListings || [])
+      .filter(e => e.website)
+      .map(e => normalizeUrl(e.website))
+  )
+  const existingSlugsFull = new Set(
+    (existingListings || []).map(e => e.slug)
+  )
+
+  const results: { name: string; status: 'ok' | 'skipped' | 'error'; reason?: string }[] = []
 
   for (const item of listings) {
+    // Duplikat-Check via Website
+    if (item.website) {
+      const normalizedWebsite = normalizeUrl(item.website)
+      if (existingWebsites.has(normalizedWebsite)) {
+        results.push({ name: item.name, status: 'skipped', reason: 'Website bereits vorhanden' })
+        continue
+      }
+    }
+
     try {
       const baseSlug = slugify(item.name)
-      // Eindeutigen Slug sicherstellen
-      const { data: existing } = await supabase
-        .from('listings')
-        .select('slug')
-        .ilike('slug', `${baseSlug}%`)
-      const usedSlugs = new Set((existing || []).map((e: any) => e.slug))
+
+      // Duplikat-Check via Slug
+      if (existingSlugsFull.has(baseSlug)) {
+        results.push({ name: item.name, status: 'skipped', reason: 'Name bereits vorhanden' })
+        continue
+      }
+
+      // Eindeutigen Slug sicherstellen (falls ähnliche slugs existieren)
       let slug = baseSlug
       let counter = 2
-      while (usedSlugs.has(slug)) {
+      while (existingSlugsFull.has(slug)) {
         slug = `${baseSlug}-${counter++}`
       }
 
@@ -78,23 +111,25 @@ export async function POST(req: NextRequest) {
       })
 
       if (error) {
-        results.push({ name: item.name, status: 'error', error: error.message })
+        results.push({ name: item.name, status: 'error', reason: error.message })
       } else {
-        results.push({ name: item.name, status: 'ok', slug })
+        existingSlugsFull.add(slug)
+        if (item.website) existingWebsites.add(normalizeUrl(item.website))
+        results.push({ name: item.name, status: 'ok' })
       }
     } catch (e: any) {
-      results.push({ name: item.name, status: 'error', error: e.message })
+      results.push({ name: item.name, status: 'error', reason: e.message })
     }
   }
 
   const ok = results.filter(r => r.status === 'ok').length
+  const skipped = results.filter(r => r.status === 'skipped').length
   const failed = results.filter(r => r.status === 'error').length
 
-  // Cache sofort leeren wenn mindestens ein Eintrag erfolgreich war
   if (ok > 0) {
     revalidatePath('/verzeichnis')
     revalidatePath('/')
   }
 
-  return NextResponse.json({ ok, failed, results })
+  return NextResponse.json({ ok, skipped, failed, results })
 }
