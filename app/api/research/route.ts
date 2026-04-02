@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
-
-const client = new Anthropic()
 
 export async function POST(req: NextRequest) {
   const { password, url, name } = await req.json()
@@ -13,58 +10,89 @@ export async function POST(req: NextRequest) {
   const query = url || name
   if (!query) return NextResponse.json({ error: 'URL or name required' }, { status: 400 })
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1000,
-    tools: [{
-      type: 'web_search_20250305',
-      name: 'web_search',
-    } as any],
-    messages: [{
-      role: 'user',
-      content: `Recherchiere das Unternehmen/Produkt: "${query}"
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json({ error: 'ANTHROPIC_API_KEY nicht konfiguriert' }, { status: 500 })
+  }
 
-Finde heraus:
-1. Vollständiger Name und kurze Beschreibung (max. 200 Zeichen)
-2. Website-URL
-3. Herkunft: Wo gegründet, Hauptsitz, Eigentümer (wichtig für Kennzeichnung)
-4. Kategorie (eine von: kommunikation, cloud-hosting, buchhaltung-finanzen, lebensmittel-getraenke, mode-textil, sport-outdoor, events-entertainment, ki-automatisierung, kunst-handgemachtes)
-5. Herkunftsbewertung: "green" (Österreich), "yellow" (Europa), "red" (International)
-6. Begründung der Herkunftsbewertung (1-2 Sätze)
-7. Keywords (5-8 relevante Begriffe, kommagetrennt)
+  const prompt = `Recherchiere das Unternehmen, Produkt oder die Website: "${query}"
 
-Antworte NUR mit JSON:
+Suche nach aktuellen Informationen und bestimme:
+1. Offizieller Name
+2. Kurze Beschreibung auf Deutsch (max. 200 Zeichen)
+3. Ausführliche Beschreibung auf Deutsch (2-4 Sätze)
+4. Offizielle Website-URL
+5. Herkunft: Gründungsland, Hauptsitz, Eigentümer/Konzernmutter
+6. Passende Kategorie (NUR eine):
+   kommunikation | cloud-hosting | buchhaltung-finanzen | lebensmittel-getraenke | mode-textil | sport-outdoor | events-entertainment | ki-automatisierung | kunst-handgemachtes
+7. Herkunftsbewertung:
+   "green" = Österreich (gegründet AT, Hauptsitz AT, österreichischer Eigentümer)
+   "yellow" = Europa (EU/DACH, kein außereuropäischer Konzern)
+   "red" = International (außereuropäischer Eigentümer oder Konzernmutter)
+8. Begründung der Herkunftsbewertung (1-2 Sätze)
+
+Antworte NUR mit JSON, ohne Markdown-Backticks oder Erklärungen:
 {
-  "name": "...",
-  "website": "https://...",
-  "description": "...",
-  "description_long": "...",
-  "category_slug": "...",
-  "ampel": "green|yellow|red",
-  "ampel_reason": "...",
-  "hq_country": "AT|DE|...",
-  "founded_country": "AT|DE|...",
-  "owner_country": "AT|DE|...",
-  "keywords": "keyword1, keyword2, ...",
-  "type": "software|produkt|service",
-  "slug": "url-freundlicher-name"
+  "name": "Offizieller Name",
+  "website": "https://example.com",
+  "description": "Kurzbeschreibung max 200 Zeichen",
+  "description_long": "Ausführliche Beschreibung 2-4 Sätze.",
+  "category_slug": "eine-der-kategorien",
+  "ampel": "green",
+  "ampel_reason": "Begründung der Herkunft.",
+  "hq_country": "AT",
+  "founded_country": "AT",
+  "owner_country": "AT",
+  "keywords": "keyword1, keyword2, keyword3",
+  "type": "software",
+  "slug": "url-freundlicher-slug"
 }`
-    }],
-  })
-
-  // Extract JSON from response
-  const text = message.content
-    .filter(b => b.type === 'text')
-    .map(b => (b as any).text)
-    .join('')
-
-  const jsonMatch = text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) return NextResponse.json({ error: 'Could not parse response' }, { status: 500 })
 
   try {
-    const data = JSON.parse(jsonMatch[0])
-    return NextResponse.json(data)
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON', raw: text }, { status: 500 })
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'web-search-2025-03-05',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        tools: [{
+          type: 'web_search_20250305',
+          name: 'web_search',
+          max_uses: 3,
+        }],
+        messages: [{
+          role: 'user',
+          content: prompt,
+        }],
+      }),
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      return NextResponse.json({ error: `Anthropic Fehler: ${err}` }, { status: 500 })
+    }
+
+    const data = await res.json()
+
+    // Text aus allen Content-Blöcken zusammensetzen
+    const text = (data.content || [])
+      .filter((b: any) => b.type === 'text')
+      .map((b: any) => b.text)
+      .join('')
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      return NextResponse.json({ error: 'Kein JSON in Antwort', raw: text }, { status: 500 })
+    }
+
+    const parsed = JSON.parse(jsonMatch[0])
+    return NextResponse.json(parsed)
+
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Unbekannter Fehler' }, { status: 500 })
   }
 }
