@@ -1,5 +1,6 @@
+'use client'
 import Link from 'next/link'
-import Image from 'next/image'
+import { useState } from 'react'
 import { Listing } from '@/lib/types'
 import AmpelBadge from './AmpelBadge'
 
@@ -8,8 +9,16 @@ interface Props {
   showCategory?: boolean
 }
 
+function LogoImage({ src, name }: { src: string; name: string }) {
+  const [error, setError] = useState(false)
+  if (error) return <span className="text-lg font-bold text-gray-300">{name.charAt(0)}</span>
+  return <img src={src} alt={name} className="w-8 h-8 object-contain" onError={() => setError(true)} />
+}
+
 export default function ListingCard({ listing, showCategory = true }: Props) {
-  const logoSrc = listing.logo_url || `https://logo.clearbit.com/${listing.website?.replace('https://', '').replace('http://', '').split('/')[0]}`
+  const logoSrc = listing.logo_url || (listing.website
+    ? `https://logo.clearbit.com/${listing.website.replace('https://', '').replace('http://', '').split('/')[0]}`
+    : null)
 
   return (
     <Link href={`/verzeichnis/${listing.slug}`} className="block">
@@ -20,40 +29,23 @@ export default function ListingCard({ listing, showCategory = true }: Props) {
             <span>Premium</span>
           </div>
         )}
-
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {listing.logo_url || listing.website ? (
-              <img
-                src={logoSrc}
-                alt={listing.name}
-                className="w-8 h-8 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none'
-                }}
-              />
+            {logoSrc ? (
+              <LogoImage src={logoSrc} name={listing.name} />
             ) : (
-              <span className="text-lg font-bold text-gray-300">
-                {listing.name.charAt(0)}
-              </span>
+              <span className="text-lg font-bold text-gray-300">{listing.name.charAt(0)}</span>
             )}
           </div>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-gray-900 text-sm leading-tight truncate">
-                {listing.name}
-              </h3>
+              <h3 className="font-semibold text-gray-900 text-sm leading-tight truncate">{listing.name}</h3>
               <AmpelBadge ampel={listing.ampel} />
             </div>
-
             {showCategory && listing.categories && (
               <div className="text-xs text-gray-400 mt-0.5">{listing.categories.name}</div>
             )}
-
-            <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
-              {listing.description}
-            </p>
+            <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{listing.description}</p>
           </div>
         </div>
       </div>

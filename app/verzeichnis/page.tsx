@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Listing, Category } from '@/lib/types'
 import DirectoryClient from './DirectoryClient'
@@ -33,5 +34,9 @@ async function getData() {
 
 export default async function VerzeichnisPage() {
   const { listings, categories } = await getData()
-  return <DirectoryClient listings={listings} categories={categories} />
+  return (
+    <Suspense fallback={<div className="max-w-6xl mx-auto px-4 py-8 text-gray-400">Wird geladen...</div>}>
+      <DirectoryClient listings={listings} categories={categories} />
+    </Suspense>
+  )
 }
