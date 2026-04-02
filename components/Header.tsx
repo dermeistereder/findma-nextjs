@@ -8,8 +8,8 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1 font-bold text-xl text-gray-900">
-          findma<span className="text-[#1D7A4F]">.</span>
+        <Link href="/" className="flex items-center">
+          <img src="/findma-logo.svg" alt="findma." width={120} height={30} className="h-7 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm">

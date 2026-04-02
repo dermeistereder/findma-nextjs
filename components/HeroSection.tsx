@@ -34,8 +34,10 @@ export default function HeroSection({ premium }: { premium: Listing[] }) {
   return (
     <section className="bg-white border-b border-gray-100">
       <div className="max-w-4xl mx-auto px-4 py-14 text-center">
-        {/* Eyebrow */}
-        <p className="text-sm text-gray-400 mb-5 tracking-wide">find ma. Aus Österreich.</p>
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <img src="/findma-logo.svg" alt="findma." width={160} height={40} className="h-10 w-auto" />
+        </div>
 
         {/* H1 */}
         <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-3 leading-tight">
