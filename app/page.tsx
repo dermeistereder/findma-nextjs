@@ -96,7 +96,7 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { flag: '🇦🇹', label: 'ÖSTERREICH', color: 'border-green-200 bg-green-50', text: 'text-green-800', desc: 'Gegründet in Österreich, Hauptsitz in Österreich, Kernleistung aus Österreich.' },
-            { flag: '🇪🇺', label: 'EUROPA', color: 'border-yellow-200 bg-yellow-50', text: 'text-yellow-800', desc: 'EU- oder DACH-Unternehmen, kein außereuropäischer Konzern, Daten bleiben in Europa.' },
+            { flag: '🇪🇺', label: 'EUROPA', color: 'border-yellow-200 bg-yellow-50', text: 'text-yellow-800', desc: 'EU- oder DACH-Unternehmen, kein außereuropäischer Konzern.' },
             { flag: '🌍', label: 'INTERNATIONAL', color: 'border-orange-200 bg-orange-50', text: 'text-orange-800', desc: 'Europäische Marke oder Produkt mit außereuropäischem Eigentümer oder Konzernmutter.' },
           ].map((item) => (
             <div key={item.label} className={`rounded-xl border p-5 ${item.color}`}>

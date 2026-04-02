@@ -39,7 +39,7 @@ export default function UeberUnsPage() {
               },
               {
                 flag: '🇪🇺', label: 'EUROPA', color: 'border-yellow-200 bg-yellow-50 text-yellow-800',
-                points: ['EU- oder DACH-Unternehmen', 'Kein außereuropäischer Konzern', 'Daten bleiben in Europa'],
+                points: ['EU- oder DACH-Unternehmen', 'Kein außereuropäischer Konzern'],
               },
               {
                 flag: '🌍', label: 'INTERNATIONAL', color: 'border-orange-200 bg-orange-50 text-orange-800',

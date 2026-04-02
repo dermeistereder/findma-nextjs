@@ -57,7 +57,7 @@ const ampelConfig = {
     bg: 'bg-yellow-50',
     border: 'border-yellow-200',
     text: 'text-yellow-800',
-    desc: 'EU- oder DACH-Unternehmen, kein außereuropäischer Konzern, Daten bleiben in Europa.',
+    desc: 'EU- oder DACH-Unternehmen, kein außereuropäischer Konzern.',
   },
   red: {
     label: 'International',
