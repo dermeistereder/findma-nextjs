@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { revalidatePath } from 'next/cache'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     categories.forEach(c => { categoryMap[c.slug] = c.id })
   }
 
-  const results: { name: string; status: 'ok' | 'error'; error?: string }[] = []
+  const results: { name: string; status: 'ok' | 'error'; slug?: string; error?: string }[] = []
 
   for (const item of listings) {
     try {
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
         .from('listings')
         .select('slug')
         .ilike('slug', `${baseSlug}%`)
-      const usedSlugs = new Set((existing || []).map(e => e.slug))
+      const usedSlugs = new Set((existing || []).map((e: any) => e.slug))
       let slug = baseSlug
       let counter = 2
       while (usedSlugs.has(slug)) {
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
       if (error) {
         results.push({ name: item.name, status: 'error', error: error.message })
       } else {
-        results.push({ name: item.name, status: 'ok' })
+        results.push({ name: item.name, status: 'ok', slug })
       }
     } catch (e: any) {
       results.push({ name: item.name, status: 'error', error: e.message })
@@ -88,6 +89,12 @@ export async function POST(req: NextRequest) {
 
   const ok = results.filter(r => r.status === 'ok').length
   const failed = results.filter(r => r.status === 'error').length
+
+  // Cache sofort leeren wenn mindestens ein Eintrag erfolgreich war
+  if (ok > 0) {
+    revalidatePath('/verzeichnis')
+    revalidatePath('/')
+  }
 
   return NextResponse.json({ ok, failed, results })
 }
