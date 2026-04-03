@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { listings } = await req.json()
+  const { listings, mode } = await req.json()
+  // mode: 'insert' (default) oder 'upsert'
+  const isUpsert = mode === 'upsert'
 
   if (!Array.isArray(listings) || listings.length === 0) {
     return NextResponse.json({ error: 'Keine Einträge übergeben' }, { status: 400 })
@@ -47,53 +49,41 @@ export async function POST(req: NextRequest) {
     categories.forEach(c => { categoryMap[c.slug] = c.id })
   }
 
-  // Alle bestehenden Websites und Slugs laden für Duplikat-Prüfung
+  // Alle bestehenden Einträge laden für Duplikat-Prüfung und Upsert
   const { data: existingListings } = await supabase
     .from('listings')
-    .select('slug, website')
+    .select('id, slug, website')
 
-  const existingWebsites = new Set(
-    (existingListings || [])
-      .filter(e => e.website)
-      .map(e => normalizeUrl(e.website))
-  )
-  const existingSlugsFull = new Set(
-    (existingListings || []).map(e => e.slug)
-  )
+  // Website -> id Map für Upsert
+  const websiteToId: Record<string, string> = {}
+  const slugToId: Record<string, string> = {}
+  const existingWebsites = new Set<string>()
+  const existingSlugs = new Set<string>()
 
-  const results: { name: string; status: 'ok' | 'skipped' | 'error'; reason?: string }[] = []
+  for (const e of existingListings || []) {
+    existingSlugs.add(e.slug)
+    slugToId[e.slug] = e.id
+    if (e.website) {
+      const norm = normalizeUrl(e.website)
+      existingWebsites.add(norm)
+      websiteToId[norm] = e.id
+    }
+  }
+
+  const results: { name: string; status: 'inserted' | 'updated' | 'skipped' | 'error'; reason?: string }[] = []
 
   for (const item of listings) {
-    // Duplikat-Check via Website
-    if (item.website) {
-      const normalizedWebsite = normalizeUrl(item.website)
-      if (existingWebsites.has(normalizedWebsite)) {
-        results.push({ name: item.name, status: 'skipped', reason: 'Website bereits vorhanden' })
-        continue
-      }
-    }
-
     try {
-      const baseSlug = slugify(item.name)
-
-      // Duplikat-Check via Slug
-      if (existingSlugsFull.has(baseSlug)) {
-        results.push({ name: item.name, status: 'skipped', reason: 'Name bereits vorhanden' })
-        continue
-      }
-
-      // Eindeutigen Slug sicherstellen (falls ähnliche slugs existieren)
-      let slug = baseSlug
-      let counter = 2
-      while (existingSlugsFull.has(slug)) {
-        slug = `${baseSlug}-${counter++}`
-      }
-
       const category_id = item.category_slug ? categoryMap[item.category_slug] || null : null
+      const normalizedWebsite = item.website ? normalizeUrl(item.website) : null
 
-      const { error } = await supabase.from('listings').insert({
+      // Existierenden Eintrag finden
+      const existingId = normalizedWebsite
+        ? websiteToId[normalizedWebsite]
+        : slugToId[slugify(item.name)]
+
+      const payload = {
         name: item.name,
-        slug,
         description: item.description || null,
         description_long: item.description_long || null,
         website: item.website || null,
@@ -106,30 +96,65 @@ export async function POST(req: NextRequest) {
         keywords: item.keywords || null,
         type: item.type || 'Unternehmen',
         status: 'approved',
-        is_premium: false,
-        is_featured: false,
-      })
+      }
 
-      if (error) {
-        results.push({ name: item.name, status: 'error', reason: error.message })
+      if (existingId && isUpsert) {
+        // UPDATE
+        const { error } = await supabase
+          .from('listings')
+          .update(payload)
+          .eq('id', existingId)
+
+        if (error) {
+          results.push({ name: item.name, status: 'error', reason: error.message })
+        } else {
+          results.push({ name: item.name, status: 'updated' })
+        }
+      } else if (existingId && !isUpsert) {
+        // Duplikat im Insert-Modus überspringen
+        results.push({ name: item.name, status: 'skipped', reason: 'Bereits vorhanden' })
       } else {
-        existingSlugsFull.add(slug)
-        if (item.website) existingWebsites.add(normalizeUrl(item.website))
-        results.push({ name: item.name, status: 'ok' })
+        // INSERT (neu)
+        const baseSlug = slugify(item.name)
+        let slug = baseSlug
+        let counter = 2
+        while (existingSlugs.has(slug)) {
+          slug = `${baseSlug}-${counter++}`
+        }
+
+        const { error } = await supabase.from('listings').insert({
+          ...payload,
+          slug,
+          is_premium: false,
+          is_featured: false,
+        })
+
+        if (error) {
+          results.push({ name: item.name, status: 'error', reason: error.message })
+        } else {
+          existingSlugs.add(slug)
+          slugToId[slug] = 'new'
+          if (normalizedWebsite) {
+            existingWebsites.add(normalizedWebsite)
+            websiteToId[normalizedWebsite] = 'new'
+          }
+          results.push({ name: item.name, status: 'inserted' })
+        }
       }
     } catch (e: any) {
       results.push({ name: item.name, status: 'error', reason: e.message })
     }
   }
 
-  const ok = results.filter(r => r.status === 'ok').length
+  const inserted = results.filter(r => r.status === 'inserted').length
+  const updated = results.filter(r => r.status === 'updated').length
   const skipped = results.filter(r => r.status === 'skipped').length
   const failed = results.filter(r => r.status === 'error').length
 
-  if (ok > 0) {
+  if (inserted > 0 || updated > 0) {
     revalidatePath('/verzeichnis')
     revalidatePath('/')
   }
 
-  return NextResponse.json({ ok, skipped, failed, results })
+  return NextResponse.json({ inserted, updated, skipped, failed, results })
 }
