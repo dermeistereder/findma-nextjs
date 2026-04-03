@@ -234,6 +234,8 @@ function ListingsTab({ password }: { password: string }) {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<Listing | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Listing | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -249,6 +251,15 @@ function ListingsTab({ password }: { password: string }) {
     await adminFetch(`/api/admin/listings/${id}`, password, {
       method: 'PATCH', body: JSON.stringify({ [field]: value }),
     })
+  }
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return
+    setDeleting(true)
+    await adminFetch(`/api/admin/listings/${confirmDelete.id}`, password, { method: 'DELETE' })
+    setConfirmDelete(null)
+    setDeleting(false)
+    load()
   }
 
   return (
@@ -313,11 +324,18 @@ function ListingsTab({ password }: { password: string }) {
                       <Toggle value={l.is_featured} onChange={v => toggle(l.id, 'is_featured', v)} />
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <button onClick={() => setEditing(l)} className="text-gray-400 hover:text-[#1D7A4F] transition-colors p-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => setEditing(l)} className="text-gray-400 hover:text-[#1D7A4F] transition-colors p-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button onClick={() => setConfirmDelete(l)} className="text-gray-400 hover:text-red-500 transition-colors p-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -327,6 +345,26 @@ function ListingsTab({ password }: { password: string }) {
         </div>
       )}
       {editing && <EditModal listing={editing} password={password} onClose={() => setEditing(null)} onSaved={load} />}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Eintrag löschen?</h2>
+            <p className="text-sm text-gray-500 mb-5">
+              <span className="font-medium text-gray-800">{confirmDelete.name}</span> wird unwiderruflich gelöscht.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={handleDelete} disabled={deleting}
+                className="bg-red-500 text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-red-600 disabled:opacity-50">
+                {deleting ? 'Wird gelöscht...' : 'Ja, löschen'}
+              </button>
+              <button onClick={() => setConfirmDelete(null)}
+                className="border border-gray-200 rounded-xl px-5 py-2.5 text-sm text-gray-600 hover:border-gray-300">
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
