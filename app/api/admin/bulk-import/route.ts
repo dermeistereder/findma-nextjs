@@ -132,11 +132,10 @@ export async function POST(req: NextRequest) {
         if (error) {
           results.push({ name: item.name, status: 'error', reason: error.message })
         } else {
+          // Nur Slug und Website als belegt markieren — keine UUID nötig
           existingSlugs.add(slug)
-          slugToId[slug] = 'new'
           if (normalizedWebsite) {
             existingWebsites.add(normalizedWebsite)
-            websiteToId[normalizedWebsite] = 'new'
           }
           results.push({ name: item.name, status: 'inserted' })
         }
