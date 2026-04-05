@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const COMING_SOON_ENABLED = true // auf false setzen wenn live
+const COMING_SOON_ENABLED = process.env.COMING_SOON_ENABLED === 'true'
 
 export function middleware(req: NextRequest) {
   if (!COMING_SOON_ENABLED) return NextResponse.next()
