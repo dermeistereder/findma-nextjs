@@ -27,6 +27,7 @@ export default function Footer() {
             <div className="flex flex-col gap-2 text-sm text-gray-500">
               <Link href="/ueber-uns" className="hover:text-gray-900 transition-colors">Über uns</Link>
               <Link href="/kennzeichnung" className="hover:text-gray-900 transition-colors">Kennzeichnungs-Richtlinie</Link>
+              <Link href="/redaktion" className="hover:text-gray-900 transition-colors">Redaktionelle Richtlinie</Link>
             </div>
           </div>
           <div>
