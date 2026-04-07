@@ -93,7 +93,9 @@ b) Premium-Listing (kostenpflichtig): Alle Leistungen des Basiseintrags sowie Pr
     title: '§ 11 Schlussbestimmungen',
     text: `(1) Sollten einzelne Bestimmungen dieser AGB unwirksam sein, berührt dies die Wirksamkeit der übrigen Bestimmungen nicht.
 
-(2) Diese AGB wurden zuletzt im März 2026 aktualisiert.`,
+(2) Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr/. Da sich findma. ausschließlich an Unternehmer richtet, ist findma. weder verpflichtet noch bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
+
+(3) Diese AGB wurden zuletzt im März 2026 aktualisiert.`,
   },
 ]
 
