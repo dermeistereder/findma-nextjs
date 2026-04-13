@@ -72,7 +72,7 @@ export default function EinreichenPage() {
       </p>
       <p className="text-sm text-gray-500 mb-8">
         findma. ist ein kuratiertes Verzeichnis. Jede Einreichung wird manuell geprüft — ein Rechtsanspruch auf Aufnahme besteht nicht.{' '}
-        <a href="/redaktionelle-richtlinie" className="text-[#1D7A4F] hover:underline">Zur redaktionellen Richtlinie →</a>
+        <a href="/redaktion" className="text-[#1D7A4F] hover:underline">Zur redaktionellen Richtlinie →</a>
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-8">
