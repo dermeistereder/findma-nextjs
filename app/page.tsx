@@ -7,6 +7,46 @@ import HeroSection from '@/components/HeroSection'
 
 export const revalidate = 3600
 
+const faqs = [
+  {
+    question: 'Was ist findma.?',
+    answer: 'findma. ist ein kuratiertes Verzeichnis österreichischer Unternehmen, Produkte und Tools — mit transparenter Herkunftskennzeichnung. Wir zeigen, ob ein Unternehmen wirklich aus Österreich, aus Europa oder international ist.',
+  },
+  {
+    question: 'Was bedeuten die Herkunftskennzeichnungen AT, EU und INT?',
+    answer: 'AT (grün) steht für Unternehmen, die in Österreich gegründet wurden und ihren Hauptsitz hier haben. EU (gelb) bezeichnet Unternehmen aus dem EU/DACH-Raum ohne außereuropäischen Konzernhintergrund. INT (orange) kennzeichnet europäische Marken mit außereuropäischem Eigentümer oder Konzernmutter.',
+  },
+  {
+    question: 'Kann ich mein Unternehmen kostenlos eintragen?',
+    answer: 'Ja. Basiseinträge sind kostenlos. Du reichst dein Unternehmen über das Formular ein, und wir prüfen den Eintrag innerhalb von 3 Werktagen manuell.',
+  },
+  {
+    question: 'Wie lange dauert die Prüfung nach dem Einreichen?',
+    answer: 'Kostenlose Basiseinträge werden innerhalb von 1–3 Werktagen geprüft. Du erhältst eine Bestätigung per E-Mail, sobald dein Eintrag freigeschaltet wurde.',
+  },
+  {
+    question: 'Gibt es einen Rechtsanspruch auf Aufnahme?',
+    answer: 'Nein. findma. ist ein kuratiertes Verzeichnis — jede Einreichung wird manuell geprüft. Ein Rechtsanspruch auf Aufnahme besteht nicht. Unsere Kriterien sind in der redaktionellen Richtlinie beschrieben.',
+  },
+  {
+    question: 'Wie wird die Herkunft eines Unternehmens bestimmt?',
+    answer: 'Die Herkunft basiert auf öffentlich zugänglichen Informationen: Gründungsland, Hauptsitz und Eigentümerstruktur. Die Kennzeichnung stellt keine rechtlich verbindliche Bewertung dar.',
+  },
+]
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(f => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: f.answer,
+    },
+  })),
+}
+
 export const metadata: Metadata = {
   title: 'findma. — Das österreichische Verzeichnis.',
   description: 'Das österreichische Unternehmensverzeichnis mit Herkunftskennzeichnung. Kuratiert. Transparent. Österreichisch.',
@@ -48,6 +88,11 @@ export default async function HomePage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+
       {/* Hero with search + ampel filters */}
       <HeroSection premium={premium} />
 
@@ -109,6 +154,24 @@ export default async function HomePage() {
           Die Kennzeichnung basiert auf öffentlich zugänglichen Informationen und stellt keine rechtlich verbindliche Bewertung dar.{' '}
           <Link href="/kennzeichnung" className="text-[#1D7A4F] hover:underline">Zur Kennzeichnungs-Richtlinie →</Link>
         </p>
+      </section>
+
+      {/* FAQ */}
+      <section className="bg-white border-t border-gray-100 mt-4">
+        <div className="max-w-3xl mx-auto px-4 py-14">
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-10">Häufige Fragen</h2>
+          <div className="divide-y divide-gray-100">
+            {faqs.map((faq) => (
+              <details key={faq.question} className="group py-4">
+                <summary className="flex justify-between items-center cursor-pointer list-none font-medium text-gray-900 text-sm">
+                  {faq.question}
+                  <span className="ml-4 text-gray-400 group-open:rotate-180 transition-transform duration-200 shrink-0">▾</span>
+                </summary>
+                <p className="mt-3 text-sm text-gray-500 leading-relaxed">{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* CTA */}
