@@ -53,9 +53,9 @@ export default function DirectoryClient({ listings, categories }: Props) {
       }
     } catch {}
 
-    const results = listings.filter(listing => {
-      if (parsedAmpel && listing.ampel !== parsedAmpel) return false
-      if (parsedCategory && listing.categories?.slug !== parsedCategory) return false
+    const scored = listings.flatMap(listing => {
+      if (parsedAmpel && listing.ampel !== parsedAmpel) return []
+      if (parsedCategory && listing.categories?.slug !== parsedCategory) return []
 
       const searchText = [
         listing.name,
@@ -63,10 +63,18 @@ export default function DirectoryClient({ listings, categories }: Props) {
         listing.description_long,
         listing.keywords,
         listing.categories?.name,
+        listing.address,
+        listing.hq_country,
+        listing.founded_country,
       ].join(' ').toLowerCase()
 
-      return keywords.some(kw => searchText.includes(kw.toLowerCase()))
+      const score = keywords.reduce((n, kw) => n + (searchText.includes(kw.toLowerCase()) ? 1 : 0), 0)
+      if (score === 0) return []
+      return [{ listing, score }]
     })
+
+    scored.sort((a, b) => b.score - a.score || (b.listing.is_premium ? 1 : 0) - (a.listing.is_premium ? 1 : 0))
+    const results = scored.map(s => s.listing)
 
     setFiltered(results)
     setIsSearching(false)
