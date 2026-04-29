@@ -56,6 +56,19 @@ async function getRelated(categoryId: string, currentSlug: string) {
   return (data || []) as Listing[]
 }
 
+async function getAustrianAlternatives(categoryId: string, currentSlug: string) {
+  const { data } = await supabase
+    .from('listings')
+    .select('*, categories(name, slug)')
+    .eq('status', 'approved')
+    .eq('category_id', categoryId)
+    .eq('ampel', 'green')
+    .neq('slug', currentSlug)
+    .order('is_premium', { ascending: false })
+    .limit(3)
+  return (data || []) as Listing[]
+}
+
 const ampelConfig = {
   green: {
     label: 'Österreich',
@@ -87,9 +100,12 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
   const listing = await getListing(params.slug)
   if (!listing) notFound()
 
-  const related = listing.category_id
-    ? await getRelated(listing.category_id, listing.slug)
-    : []
+  const [related, austrianAlternatives] = await Promise.all([
+    listing.category_id ? getRelated(listing.category_id, listing.slug) : Promise.resolve([]),
+    listing.category_id && listing.ampel !== 'green'
+      ? getAustrianAlternatives(listing.category_id, listing.slug)
+      : Promise.resolve([]),
+  ])
 
   const ampel = ampelConfig[listing.ampel]
   const logoSrc = listing.logo_url ||
@@ -290,6 +306,34 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
             >
               Jetzt upgraden →
             </Link>
+          </div>
+        )}
+
+        {/* Kauf Österreichisch */}
+        {austrianAlternatives.length > 0 && listing.categories && (
+          <div className="mt-10">
+            <div className="rounded-xl border border-green-200 bg-green-50 px-5 py-4 mb-5">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🇦🇹</span>
+                <h2 className="font-bold text-green-900 text-base">Kauf Österreichisch</h2>
+              </div>
+              <p className="text-sm text-green-800">
+                {listing.categories.name} aus österreichischem Eigentum — geprüft und eingetragen.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {austrianAlternatives.map(r => (
+                <ListingCard key={r.id} listing={r} showCategory={false} />
+              ))}
+            </div>
+            <div className="mt-4 text-center">
+              <Link
+                href={`/verzeichnis/kategorie/${listing.categories.slug}`}
+                className="text-sm text-[#1D7A4F] hover:underline"
+              >
+                Alle österreichischen Einträge in {listing.categories.name} →
+              </Link>
+            </div>
           </div>
         )}
 
